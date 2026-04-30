@@ -101,7 +101,7 @@
     .display-bar {
       background: var(--paper);
       border-bottom: 2px solid var(--line);
-      padding: calc(8px + var(--safe-top)) 16px 8px;
+      padding: calc(4px + var(--safe-top)) 12px 4px;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -181,7 +181,7 @@
     }
 
     .display-total {
-      font-size: 42px;
+      font-size: 28px;
       font-weight: 700;
       color: var(--red);
       line-height: 1;
@@ -454,7 +454,10 @@
       background: var(--bg-dark);
       display: flex;
       gap: 8px;
-      padding: 7px 12px calc(7px + var(--safe-bottom));
+      padding: 5px 12px;
+      /* safe-area分だけ下にはみ出させて、その分グリッドを広げる */
+      margin-bottom: calc(-1 * var(--safe-bottom));
+      padding-bottom: calc(5px + var(--safe-bottom));
       flex-shrink: 0;
       position: relative;
       z-index: 25;
