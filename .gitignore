@@ -1,0 +1,17 @@
+# 開発用ファイル（GitHub Pagesには不要）
+node_modules/
+package.json
+package-lock.json
+vitest.config.js
+src/
+kaikei/
+
+# Kiro IDE設定
+.kiro/
+.vscode/
+
+# macOS
+.DS_Store
+
+# ガイド・ドキュメント（任意）
+使い方ガイド.md
