@@ -1,5 +1,5 @@
 // 富士見横丁レトロ 会計アプリ Service Worker
-const CACHE_NAME = 'fujimi-yokocho-20260430130718'
+const CACHE_NAME = 'fujimi-yokocho-20260430130741'
 const CACHE_FILES = ['./', './manifest.json', './assets/main_logo.png']
 
 // インストール：キャッシュにファイルを保存
