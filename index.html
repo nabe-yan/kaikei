@@ -79,7 +79,6 @@
       background: var(--bg);
       padding-left: var(--safe-left);
       padding-right: var(--safe-right);
-      padding-bottom: var(--safe-bottom);
     }
 
     .view.active {
@@ -454,7 +453,7 @@
       background: var(--bg-dark);
       display: flex;
       gap: 8px;
-      padding: 7px 12px;
+      padding: 7px 12px calc(7px + var(--safe-bottom));
       flex-shrink: 0;
       position: relative;
       z-index: 25;
@@ -2624,6 +2623,22 @@
       AppState.seqCounter = 0
     }
     render()
+
+    // ── ビューポート高さの動的設定（iOSのアドレスバー・ツールバー余白対策）
+    // visualViewport.height を使って実際の表示領域の高さを --vh に設定する
+    function setViewportHeight() {
+      const vh = (window.visualViewport ? window.visualViewport.height : window.innerHeight)
+      document.documentElement.style.setProperty('--real-vh', vh + 'px')
+      // .view の高さを実際の表示領域に合わせる
+      document.querySelectorAll('.view').forEach(el => {
+        el.style.height = vh + 'px'
+      })
+    }
+    setViewportHeight()
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', setViewportHeight)
+    }
+    window.addEventListener('resize', setViewportHeight)
 
       // ── イベントリスナー（touch/clickの二重発火を防ぐため addEventListener で一元管理）
       ; (function () {
