@@ -20,14 +20,14 @@ jobs:
       - name: Update CACHE_NAME with timestamp
         run: |
           TIMESTAMP=$(date -u +"%Y%m%d%H%M%S")
-          sed -i "s/const CACHE_NAME = 'fujimi-yokocho-[^']*'/const CACHE_NAME = 'fujimi-yokocho-${TIMESTAMP}'/" sw.js
-          echo "Updated CACHE_NAME to fujimi-yokocho-${TIMESTAMP}"
-          cat sw.js | grep CACHE_NAME
+          # CACHE_NAME の値（シングルクォート内）をタイムスタンプに置換
+          sed -i "s/const CACHE_NAME = '[^']*'/const CACHE_NAME = 'fujimi-yokocho-${TIMESTAMP}'/" sw.js
+          echo "Updated CACHE_NAME:"
+          grep CACHE_NAME sw.js | head -1
 
       - name: Commit updated sw.js
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add sw.js
-          git diff --staged --quiet && echo "No changes" || git commit -m "chore: update SW cache version [skip ci]"
-          git diff --staged --quiet || git push
+          git diff --staged --quiet && echo "No changes to commit" || (git commit -m "chore: update SW cache version [skip ci]" && git push)
