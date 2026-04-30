@@ -11,8 +11,8 @@
   <title>富士見横丁レトロ</title>
   <!-- PWA対応 -->
   <link rel="manifest" href="./manifest.json">
-  <link rel="apple-touch-icon"
-    href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='24' fill='%23c8332a'/%3E%3Ctext x='96' y='140' font-family='serif' font-size='110' font-weight='bold' fill='%23fbf3df' text-anchor='middle'%3E%E4%BC%9A%3C/text%3E%3C/svg%3E">
+  <link rel="icon" href="./assets/main_logo.png">
+  <link rel="apple-touch-icon" href="./assets/main_logo.png">
   <meta name="theme-color" content="#c8332a">
   <style>
     :root {
@@ -77,8 +77,6 @@
       top: 0;
       left: 0;
       background: var(--bg);
-      padding-top: var(--safe-top);
-      padding-bottom: var(--safe-bottom);
       padding-left: var(--safe-left);
       padding-right: var(--safe-right);
     }
@@ -87,39 +85,12 @@
       display: flex;
     }
 
-    /* ── HEADER ── */
-    .app-header {
-      background: var(--red);
-      color: #fff;
-      text-align: center;
-      padding: 6px 16px;
-      font-size: 16px;
-      font-weight: 700;
-      letter-spacing: 0.1em;
-      flex-shrink: 0;
-      cursor: pointer;
-      position: relative;
-      min-height: 40px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .app-header .session-id {
-      position: absolute;
-      right: 12px;
-      font-size: 10px;
-      opacity: 0.7;
-      font-weight: 400;
-      letter-spacing: 0;
-    }
-
     /* ── STORAGE WARNING ── */
     .storage-warning {
       background: var(--color-warning);
       color: #fff;
       text-align: center;
-      padding: 6px 12px;
+      padding: calc(6px + var(--safe-top)) 12px 6px;
       font-size: 12px;
       font-weight: 700;
       flex-shrink: 0;
@@ -129,11 +100,82 @@
     .display-bar {
       background: var(--paper);
       border-bottom: 2px solid var(--line);
-      padding: 8px 16px;
+      padding: calc(8px + var(--safe-top)) 16px 8px;
       display: flex;
       align-items: center;
-      justify-content: center;
+      justify-content: space-between;
       flex-shrink: 0;
+      cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .cart-inline-btn {
+      background: var(--bg-dark);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 6px 12px;
+      font-size: 14px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      touch-action: manipulation;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .cart-inline-btn:active {
+      background: #444;
+    }
+
+    /* ── CART DROPDOWN（display-bar直下から下向きに展開） ── */
+    .cart-dropdown {
+      position: absolute;
+      left: 0;
+      right: 0;
+      background: var(--paper);
+      border-bottom: 2px solid var(--line);
+      box-shadow: 0 6px 20px rgba(43, 29, 20, 0.25);
+      z-index: 50;
+      max-height: 50vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .cart-dropdown.hidden {
+      display: none;
+    }
+
+    .cart-dropdown-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 14px;
+      background: var(--bg-dark);
+      color: var(--paper);
+      font-size: 13px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .cart-dropdown-close {
+      background: transparent;
+      border: none;
+      color: var(--paper);
+      font-size: 16px;
+      cursor: pointer;
+      touch-action: manipulation;
+      padding: 2px 6px;
+      line-height: 1;
+    }
+
+    .cart-dropdown-content {
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      flex: 1;
     }
 
     .display-total {
@@ -144,84 +186,16 @@
       letter-spacing: -0.02em;
     }
 
-    /* ── CART TAB（折りたたみ式・グリッドに重ねる） ── */
-    .cart-tab-bar {
+    /* ── ITEM GRID（商品名ヘッダー＋サイズボタン縦積み・2列） ── */
+    .item-grid-wrap {
+      flex: 1;
+      overflow: hidden;
       display: flex;
-      align-items: center;
-      justify-content: space-between;
-      background: var(--bg-dark);
-      color: var(--paper);
-      padding: 0 12px;
-      height: 36px;
-      flex-shrink: 0;
-      cursor: pointer;
-      touch-action: manipulation;
-      user-select: none;
-      -webkit-user-select: none;
+      flex-direction: column;
       position: relative;
-      z-index: 25;
     }
 
-    .cart-tab-bar:active {
-      background: #3a2a1e;
-    }
-
-    .cart-tab-left {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 13px;
-      font-weight: 700;
-    }
-
-    .cart-tab-count {
-      background: var(--red);
-      color: #fff;
-      font-size: 11px;
-      font-weight: 700;
-      min-width: 20px;
-      height: 20px;
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0 4px;
-    }
-
-    .cart-tab-total {
-      color: var(--gold);
-      font-size: 15px;
-      font-weight: 700;
-    }
-
-    .cart-tab-arrow {
-      font-size: 12px;
-      opacity: 0.7;
-      transition: transform 0.15s;
-    }
-
-    .cart-tab-arrow.open {
-      transform: rotate(180deg);
-    }
-
-    /* カートドロワー（カートタブバーの下〜アクションバーの上） */
-    .cart-drawer {
-      position: fixed;
-      left: 0;
-      right: 0;
-      background: var(--paper);
-      border-top: 2px solid var(--line);
-      border-bottom: 2px solid var(--line);
-      z-index: 20;
-      overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
-      box-shadow: 0 4px 16px rgba(43, 29, 20, 0.25);
-    }
-
-    .cart-drawer.hidden {
-      display: none;
-    }
-
+    /* カートオーバーレイ内のアイテム表示 */
     .cart-item {
       display: flex;
       align-items: center;
@@ -302,14 +276,6 @@
       min-width: 58px;
       text-align: right;
       flex-shrink: 0;
-    }
-
-    /* ── ITEM GRID（商品名ヘッダー＋サイズボタン縦積み・2列） ── */
-    .item-grid-wrap {
-      flex: 1;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
     }
 
     .item-grid-scroll {
@@ -486,7 +452,7 @@
       background: var(--bg-dark);
       display: flex;
       gap: 8px;
-      padding: 7px 12px;
+      padding: 7px 12px calc(7px + var(--safe-bottom));
       flex-shrink: 0;
       position: relative;
       z-index: 25;
@@ -744,7 +710,7 @@
       border: 1.5px solid var(--line);
       border-radius: 8px;
       padding: 16px 4px;
-      font-size: 22px;
+      font-size: clamp(20px, 5.5vw, 28px);
       font-weight: 700;
       font-family: inherit;
       color: var(--ink);
@@ -760,7 +726,7 @@
     .numpad-btn.numpad-del {
       background: var(--bg);
       color: var(--red);
-      font-size: 24px;
+      font-size: clamp(24px, 7vw, 36px);
     }
 
     .numpad-btn.numpad-del:active {
@@ -770,7 +736,7 @@
     .numpad-btn.numpad-clear {
       background: var(--bg);
       color: var(--red);
-      font-size: 16px;
+      font-size: clamp(15px, 4vw, 20px);
       font-weight: 700;
     }
 
@@ -815,6 +781,35 @@
       overflow: hidden;
     }
 
+    .sales-tabs {
+      display: flex;
+      background: var(--bg-dark);
+      flex-shrink: 0;
+    }
+
+    .sales-tab-btn {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: rgba(255, 255, 255, 0.6);
+      font-size: 14px;
+      font-weight: 700;
+      font-family: inherit;
+      padding: 10px;
+      cursor: pointer;
+      touch-action: manipulation;
+      border-bottom: 3px solid transparent;
+    }
+
+    .sales-tab-btn.active {
+      color: #fff;
+      border-bottom-color: var(--gold);
+    }
+
+    .sales-tab-btn:active {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
     .sales-header {
       background: var(--bg-dark);
       color: #fff;
@@ -830,6 +825,13 @@
       font-size: 18px;
       font-weight: 700;
       letter-spacing: 0.1em;
+    }
+
+    .session-id-sales {
+      font-size: 10px;
+      opacity: 0.6;
+      font-weight: 400;
+      letter-spacing: 0;
     }
 
     .btn-close-sales {
@@ -1030,6 +1032,7 @@
       color: var(--ink);
       cursor: pointer;
       touch-action: manipulation;
+      margin-top: 8px;
     }
 
     .btn-import-toggle:active {
@@ -1189,31 +1192,28 @@
 <body>
   <!-- ORDER VIEW -->
   <div id="app-order" class="view active">
-    <div id="order-header" class="app-header" onclick="handleTitleTap()">
-      富士見横丁レトロ
-      <span class="session-id" id="session-id-display"></span>
-    </div>
     <div id="storage-warning" class="storage-warning" style="display:none">
       ⚠️ ストレージ容量が逼迫しています。データをエクスポートしてください。
     </div>
-    <div class="display-bar">
+    <div class="display-bar" id="display-bar">
       <div class="display-total" id="display-total">¥0</div>
+      <button class="cart-inline-btn" id="cart-inline-btn" style="display:none">
+        <span id="cart-inline-count">0</span>品
+        <span id="cart-inline-arrow">▲</span>
+      </button>
     </div>
     <div class="item-grid-wrap">
-      <!-- カートタブバー（常に表示・タップで展開） -->
-      <div class="cart-tab-bar" id="cart-tab-bar" onclick="toggleCartDrawer()">
-        <div class="cart-tab-left">
-          <span>注文中</span>
-          <span class="cart-tab-count" id="cart-tab-count">0</span>
-          <span class="cart-tab-total" id="cart-tab-total">¥0</span>
+      <!-- カートドロップダウン（display-bar直下から下向きに展開） -->
+      <div id="cart-dropdown" class="cart-dropdown hidden">
+        <div class="cart-dropdown-header">
+          <span>注文内容</span>
+          <button class="cart-dropdown-close" onclick="closeCartOverlay()">✕</button>
         </div>
-        <span class="cart-tab-arrow" id="cart-tab-arrow">▲</span>
+        <div id="cart-overlay-content" class="cart-dropdown-content"></div>
       </div>
       <!-- 品目グリッド（常に固定高さ） -->
       <div class="item-grid-scroll" id="item-grid"></div>
     </div>
-    <!-- カートドロワー（アクションバーの上まで広がる） -->
-    <div class="cart-drawer hidden" id="cart-drawer"></div>
     <div class="action-bar">
       <button class="btn-clear" onclick="handleClearCart()">全クリア</button>
       <button class="btn-checkout" id="btn-checkout" onclick="handleCheckout()" style="display:none">お会計</button>
@@ -1224,6 +1224,7 @@
   <div id="app-sales" class="view">
     <div class="sales-header">
       <span class="sales-header-title">売上確認</span>
+      <span class="session-id-sales" id="session-id-sales"></span>
       <button class="btn-close-sales" onclick="handleCloseSales()">閉じる</button>
     </div>
     <div class="sales-body" id="sales-body"></div>
@@ -1291,6 +1292,14 @@
 
   <script>
     // ============================================================
+    // SharedJSON設定
+    // ============================================================
+    // ⚠️ CORSヘッダー（Access-Control-Allow-Origin: *）を返すサービスのURLを設定すること
+    // ⚠️ パブリックリポジトリに公開する場合はURLが外部から見える点に注意
+    // 例: 'https://api.jsonbin.io/v3/b/XXXXX'（JSONBin.io等のCORS対応サービス）
+    const SHARED_JSON_URL = ''
+
+    // ============================================================
     // ロジック層（src/logic.js より移植、export キーワード削除）
     // ============================================================
     // オフライン会計アプリ ロジック層
@@ -1331,6 +1340,11 @@
         ]
       },
       {
+        id: 'pet-bottle', name: 'ペットボトル', category: 'drink', sizes: [
+          { size: 'normal', label: 'ノーマル', price: 300 },
+        ]
+      },
+      {
         id: 'lemon-cider', name: 'レモンサイダー', category: 'drink', sizes: [
           { size: 'normal', label: 'ノーマル', price: 500 },
           { size: 'mega', label: 'メガ', price: 800 },
@@ -1356,11 +1370,6 @@
           { size: 'normal', label: 'ノーマル', price: 600 },
           { size: 'mega', label: 'メガ', price: 900 },
           { size: 'ultra', label: 'ウルトラ', price: 1200 },
-        ]
-      },
-      {
-        id: 'pet-bottle', name: 'ペットボトル', category: 'drink', sizes: [
-          { size: 'normal', label: 'ノーマル', price: 300 },
         ]
       },
       {
@@ -1788,14 +1797,12 @@
       currentView: 'order',
       seqCounter: 0,
       storageWarning: false,
-      titleTapCount: 0,
-      titleTapTimer: null,
       checkoutModalOpen: false,
       receivedAmount: 0,
       currentCategory: 'drink',
-      cartDrawerOpen: false,
       deleteMode: false,
       txHistoryOpen: false,
+      salesTab: 'local',
     }
 
     // ============================================================
@@ -1836,6 +1843,11 @@
         AppState.storageWarning = warning
         const banner = document.getElementById('storage-warning')
         if (banner) banner.style.display = warning ? 'block' : 'none'
+        // storage-warning表示中はdisplay-barのpadding-topを通常値に戻す（二重適用防止）
+        const displayBar = document.querySelector('.display-bar')
+        if (displayBar) {
+          displayBar.style.paddingTop = warning ? '8px' : ''
+        }
       }).catch(() => { })
     }
 
@@ -1855,10 +1867,6 @@
     // OrderView
     // ============================================================
     function renderOrderView() {
-      // Session ID display
-      const sidEl = document.getElementById('session-id-display')
-      if (sidEl) sidEl.textContent = AppState.sessionId
-
       // Total
       const total = getCartTotal(AppState.cart)
       const totalEl = document.getElementById('display-total')
@@ -1875,38 +1883,55 @@
       if (btnCheckout) {
         btnCheckout.style.display = AppState.cart.length === 0 ? 'none' : 'block'
       }
+
+      // インラインカートボタンの表示状態を更新
+      renderCart()
     }
 
     function renderCart() {
-      // カートタブバーを更新
-      const total = getCartTotal(AppState.cart)
+      // インラインカートボタンを更新
       const itemCount = AppState.cart.reduce((s, i) => s + i.quantity, 0)
-      const countEl = document.getElementById('cart-tab-count')
-      const totalEl2 = document.getElementById('cart-tab-total')
-      const arrowEl = document.getElementById('cart-tab-arrow')
-      if (countEl) countEl.textContent = itemCount
-      if (totalEl2) totalEl2.textContent = formatPrice(total)
-      if (arrowEl) {
-        arrowEl.textContent = AppState.cartDrawerOpen ? '▼' : '▲'
-        arrowEl.className = 'cart-tab-arrow' + (AppState.cartDrawerOpen ? ' open' : '')
+      const cartInlineBtn = document.getElementById('cart-inline-btn')
+      const cartInlineCount = document.getElementById('cart-inline-count')
+      if (cartInlineBtn) {
+        cartInlineBtn.style.display = AppState.cart.length === 0 ? 'none' : 'flex'
+        if (cartInlineCount) cartInlineCount.textContent = itemCount
       }
+    }
 
-      // カートドロワーを更新
-      const drawer = document.getElementById('cart-drawer')
-      if (!drawer) return
-
-      if (!AppState.cartDrawerOpen) {
-        drawer.classList.add('hidden')
-        return
+    function toggleCartOverlay() {
+      resetDisplayBarTapCount()
+      const dropdown = document.getElementById('cart-dropdown')
+      if (!dropdown) return
+      if (dropdown.classList.contains('hidden')) {
+        renderCartOverlay()
+        dropdown.classList.remove('hidden')
+        const arrow = document.getElementById('cart-inline-arrow')
+        if (arrow) arrow.textContent = '▼'
+      } else {
+        closeCartOverlay()
       }
-      drawer.classList.remove('hidden')
+    }
 
+    function closeCartOverlay() {
+      const dropdown = document.getElementById('cart-dropdown')
+      if (dropdown) dropdown.classList.add('hidden')
+      const arrow = document.getElementById('cart-inline-arrow')
+      if (arrow) arrow.textContent = '▲'
+    }
+
+    function handleCartOverlayBgClick(e) {
+      // ドロップダウン形式のため不要（✕ボタンで閉じる）
+    }
+
+    function renderCartOverlay() {
+      const content = document.getElementById('cart-overlay-content')
+      if (!content) return
       if (AppState.cart.length === 0) {
-        drawer.innerHTML = '<div style="padding:12px;text-align:center;color:#aaa;font-size:13px;">注文なし</div>'
+        content.innerHTML = '<div style="padding:12px;text-align:center;color:#aaa;font-size:13px;">注文なし</div>'
         return
       }
-
-      const rows = AppState.cart.map(item => {
+      content.innerHTML = AppState.cart.map(item => {
         const subtotal = item.price * item.quantity
         const sizeTag = item.sizeLabel && item.sizeLabel !== 'ノーマル'
           ? '<span class="cart-item-size">' + item.sizeLabel + '</span>'
@@ -1916,32 +1941,29 @@
           sizeTag +
           '<span class="cart-item-price">' + formatPrice(item.price) + '</span>' +
           '<div class="cart-item-controls">' +
-          '<button class="cart-qty-btn" onclick="handleCartQty(&apos;' + item.itemId + '&apos;,&apos;' + item.size + '&apos;,-1)" aria-label="減らす">−</button>' +
+          '<button class="cart-qty-btn" onclick="handleCartQtyInOverlay(&apos;' + item.itemId + '&apos;,&apos;' + item.size + '&apos;,-1)" aria-label="減らす">−</button>' +
           '<span class="cart-qty-num">' + item.quantity + '</span>' +
-          '<button class="cart-qty-btn" onclick="handleCartQty(&apos;' + item.itemId + '&apos;,&apos;' + item.size + '&apos;,1)" aria-label="増やす">+</button>' +
+          '<button class="cart-qty-btn" onclick="handleCartQtyInOverlay(&apos;' + item.itemId + '&apos;,&apos;' + item.size + '&apos;,1)" aria-label="増やす">+</button>' +
           '</div>' +
           '<span class="cart-item-subtotal">' + formatPrice(subtotal) + '</span>' +
           '</div>'
       }).join('')
-
-      drawer.innerHTML = rows
     }
 
-    function toggleCartDrawer() {
-      AppState.cartDrawerOpen = !AppState.cartDrawerOpen
+    function handleCartQtyInOverlay(itemId, size, delta) {
+      AppState.cart = updateCartQty(AppState.cart, itemId, size, delta)
+      persist()
+      renderCartOverlay()
+      // 合計金額・カートボタン・グリッドバッジを更新
+      const total = getCartTotal(AppState.cart)
+      const totalEl = document.getElementById('display-total')
+      if (totalEl) totalEl.textContent = formatPrice(total)
       renderCart()
-      // ドロワーの位置をカートタブバーの下・アクションバーの上に動的設定
-      if (AppState.cartDrawerOpen) {
-        const tabBar = document.getElementById('cart-tab-bar')
-        const actionBar = document.querySelector('.action-bar')
-        const drawer = document.getElementById('cart-drawer')
-        if (tabBar && actionBar && drawer) {
-          const tabRect = tabBar.getBoundingClientRect()
-          const actionRect = actionBar.getBoundingClientRect()
-          drawer.style.top = tabRect.bottom + 'px'
-          drawer.style.bottom = (window.innerHeight - actionRect.top) + 'px'
-        }
-      }
+      renderItemGrid()
+      const btnCheckout = document.getElementById('btn-checkout')
+      if (btnCheckout) btnCheckout.style.display = AppState.cart.length === 0 ? 'none' : 'block'
+      // カートが空になったらオーバーレイを閉じる
+      if (AppState.cart.length === 0) closeCartOverlay()
     }
 
     function renderItemGrid() {
@@ -2008,27 +2030,58 @@
       const body = document.getElementById('sales-body')
       if (!body) return
 
+      // SessionID表示を更新
+      const sidEl = document.getElementById('session-id-sales')
+      if (sidEl) sidEl.textContent = 'ID: ' + AppState.sessionId
+
+      // タブUI
+      let html = '<div class="sales-tabs">' +
+        '<button class="sales-tab-btn' + (AppState.salesTab === 'local' ? ' active' : '') + '" onclick="switchSalesTab(&apos;local&apos;)">ローカル</button>' +
+        '<button class="sales-tab-btn' + (AppState.salesTab === 'global' ? ' active' : '') + '" onclick="switchSalesTab(&apos;global&apos;)">全体</button>' +
+        '</div>'
+      body.innerHTML = html
+
+      if (AppState.salesTab === 'global') {
+        renderGlobalSalesView()
+        return
+      }
+
+      // ローカルタブ
+      renderLocalSalesContent()
+    }
+
+    function switchSalesTab(tab) {
+      AppState.salesTab = tab
+      renderSalesView()
+    }
+
+    function renderLocalSalesContent() {
+      const body = document.getElementById('sales-body')
+      if (!body) return
+
       const { total, itemStats } = getDailySummary(AppState.transactions)
       const todayTx = getTodayTransactions(AppState.transactions)
 
+      let html = body.innerHTML // タブUIを保持
+
       // Total card
-      let html = '<div class="sales-total-card">' +
-        '<div class="sales-total-label">\u672c\u65e5\u58f2\u4e0a\u5408\u8a08</div>' +
+      html += '<div class="sales-total-card">' +
+        '<div class="sales-total-label">本日売上合計</div>' +
         '<div class="sales-total-amount">' + formatPrice(total) + '</div>' +
-        '<div class="sales-total-count">' + todayTx.length + '\u4ef6\u306e\u53d6\u5f15</div>' +
+        '<div class="sales-total-count">' + todayTx.length + '件の取引</div>' +
         '</div>'
 
       // Item stats
-      html += '<div class="sales-section-title">\u54c1\u76ee\u5225\u96c6\u8a08</div>'
+      html += '<div class="sales-section-title">品目別集計</div>'
       if (itemStats.length === 0) {
-        html += '<div class="sales-card"><div class="sales-empty">\u53d6\u5f15\u306a\u3057</div></div>'
+        html += '<div class="sales-card"><div class="sales-empty">取引なし</div></div>'
       } else {
         html += '<div class="sales-card">'
         html += itemStats.map(s =>
           '<div class="item-stat-row">' +
           '<span class="item-stat-name">' + s.name + '</span>' +
           '<span class="item-stat-size">' + s.sizeLabel + '</span>' +
-          '<span class="item-stat-qty">' + s.quantity + '\u500b</span>' +
+          '<span class="item-stat-qty">' + s.quantity + '個</span>' +
           '<span class="item-stat-amount">' + formatPrice(s.amount) + '</span>' +
           '</div>'
         ).join('')
@@ -2071,27 +2124,123 @@
         }
       }
 
-      // Export/Import section
+      // 共有セクション
       html += '<div class="share-section">' +
-        '<div class="share-section-title">\u30c7\u30fc\u30bf\u5171\u6709</div>' +
-        '<button class="btn-export" onclick="handleExport()">\u30c7\u30fc\u30bf\u3092\u5171\u6709</button>' +
+        '<div class="share-section-title">データ共有</div>' +
+        '<button class="btn-export" id="btn-export" onclick="handleExport()">データをコピーして共有</button>' +
         '<div class="export-fallback-area" id="export-fallback-area" style="display:none">' +
         '<textarea class="export-fallback-textarea" id="export-fallback" readonly></textarea>' +
-        '<div class="export-fallback-note">\u4e0a\u8a18\u3092\u30b3\u30d4\u30fc\u3057\u3066LINE\u306a\u3069\u3067\u9001\u3063\u3066\u304f\u3060\u3055\u3044</div>' +
+        '<div class="export-fallback-note">上記をコピーしてLINEなどで送ってください</div>' +
         '</div>' +
-        '<button class="btn-import-toggle" onclick="toggleImportArea()">\u30c7\u30fc\u30bf\u3092\u30a4\u30f3\u30dd\u30fc\u30c8</button>' +
+        '<button class="btn-import-toggle" onclick="toggleImportArea()">データをインポート</button>' +
         '<div class="import-area" id="import-area" style="display:none">' +
-        '<textarea class="import-textarea" id="import-textarea" placeholder="\u30b3\u30d4\u30fc\u3057\u305fJSON\u3092\u8cbc\u308a\u4ed8\u3051\u3066\u304f\u3060\u3055\u3044"></textarea>' +
-        '<button class="btn-import-exec" onclick="handleImport()">\u53d6\u308a\u8fbc\u3080</button>' +
+        '<textarea class="import-textarea" id="import-textarea" placeholder="コピーしたJSONを貼り付けてください"></textarea>' +
+        '<button class="btn-import-exec" onclick="handleImport()">取り込む</button>' +
         '</div>' +
         '</div>'
 
       // Reset section
       html += '<div class="reset-section">' +
-        '<button class="btn-reset" onclick="handleReset()">\u672c\u65e5\u306e\u30c7\u30fc\u30bf\u3092\u30ea\u30bb\u30c3\u30c8</button>' +
+        '<button class="btn-reset" onclick="handleReset()">本日のデータをリセット</button>' +
         '</div>'
 
       body.innerHTML = html
+    }
+
+    async function fetchSharedData() {
+      if (!SHARED_JSON_URL) return null
+      const res = await fetch(SHARED_JSON_URL)
+      if (!res.ok) throw new Error('HTTP ' + res.status)
+      return await res.json()
+    }
+
+    async function renderGlobalSalesView() {
+      const body = document.getElementById('sales-body')
+      if (!body) return
+
+      // タブUIを保持しつつローディング表示
+      const tabHtml = body.innerHTML
+      body.innerHTML = tabHtml + '<div style="text-align:center;padding:20px;color:#888;font-size:14px;">読み込み中...</div>'
+
+      if (!SHARED_JSON_URL) {
+        body.innerHTML = tabHtml + '<div style="text-align:center;padding:20px;color:#888;font-size:14px;">共有URLが設定されていません</div>'
+        return
+      }
+
+      try {
+        const data = await fetchSharedData()
+        const transactions = (data && Array.isArray(data.transactions)) ? data.transactions : []
+        const fetchedAt = new Date().toLocaleString('ja-JP')
+
+        // 全日付対象で集計
+        const total = transactions.reduce((sum, t) => sum + t.total, 0)
+        const statsMap = {}
+        for (const tx of transactions) {
+          for (const item of tx.items) {
+            const key = item.itemId + '_' + item.size
+            if (!statsMap[key]) {
+              statsMap[key] = { itemId: item.itemId, name: item.name, size: item.size, sizeLabel: item.sizeLabel, quantity: 0, amount: 0 }
+            }
+            statsMap[key].quantity += item.quantity
+            statsMap[key].amount += item.subtotal
+          }
+        }
+        const itemStats = Object.values(statsMap).sort((a, b) => b.amount - a.amount)
+
+        let html = tabHtml
+
+        // Total card
+        html += '<div class="sales-total-card">' +
+          '<div class="sales-total-label">全体売上合計</div>' +
+          '<div class="sales-total-amount">' + formatPrice(total) + '</div>' +
+          '<div class="sales-total-count">' + transactions.length + '件の取引</div>' +
+          '<div style="font-size:11px;color:#aaa;margin-top:4px;">取得日時: ' + fetchedAt + '</div>' +
+          '</div>'
+
+        // Item stats
+        html += '<div class="sales-section-title">品目別集計（全端末・全期間）</div>'
+        if (itemStats.length === 0) {
+          html += '<div class="sales-card"><div class="sales-empty">取引なし</div></div>'
+        } else {
+          html += '<div class="sales-card">'
+          html += itemStats.map(s =>
+            '<div class="item-stat-row">' +
+            '<span class="item-stat-name">' + s.name + '</span>' +
+            '<span class="item-stat-size">' + s.sizeLabel + '</span>' +
+            '<span class="item-stat-qty">' + s.quantity + '個</span>' +
+            '<span class="item-stat-amount">' + formatPrice(s.amount) + '</span>' +
+            '</div>'
+          ).join('')
+          html += '</div>'
+        }
+
+        // Transaction history（新しい順）
+        html += '<div class="sales-section-title">取引履歴（全端末）</div>'
+        if (transactions.length === 0) {
+          html += '<div class="sales-card"><div class="sales-empty">取引なし</div></div>'
+        } else {
+          html += '<div class="sales-card">'
+          const sorted = [...transactions].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+          html += sorted.map(tx => {
+            const d = new Date(tx.timestamp)
+            const timeStr = d.toLocaleString('ja-JP', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
+            const itemsStr = tx.items.map(i => i.name + (i.sizeLabel !== 'ノーマル' ? '(' + i.sizeLabel + ')' : '') + '×' + i.quantity).join('、')
+            return '<div class="tx-row">' +
+              '<div class="tx-row-header">' +
+              '<span class="tx-time">' + timeStr + ' [' + tx.sessionId + ']</span>' +
+              '<span class="tx-total">' + formatPrice(tx.total) + '</span>' +
+              '</div>' +
+              '<div class="tx-items">' + itemsStr + '</div>' +
+              '</div>'
+          }).join('')
+          html += '</div>'
+        }
+
+        body.innerHTML = html
+      } catch (e) {
+        const tabHtmlCurrent = body.innerHTML.split('<div style')[0]
+        body.innerHTML = tabHtmlCurrent + '<div style="text-align:center;padding:20px;color:var(--red);font-size:14px;">取得に失敗しました: ' + e.message + '</div>'
+      }
     }
 
     // ============================================================
@@ -2241,6 +2390,50 @@
     }
 
     // ============================================================
+    // 合計金額バー5回タップ（売上確認画面へ）
+    // ============================================================
+    let _displayBarTapCount = 0
+    let _displayBarTapTimer = null
+    let _lastTapWasTouch = false  // touchendとclickの二重発火防止（addEventListener側で管理）
+
+    function handleDisplayBarTouchStart(e) { /* 不使用 */ }
+    function handleDisplayBarTouchEnd() { /* 不使用 */ }
+
+    function handleDisplayBarTap(e) {
+      // カートボタンからのイベントは無視
+      if (e.target && e.target.closest && e.target.closest('#cart-inline-btn')) return
+
+      _displayBarTapCount++
+      if (_displayBarTapTimer) clearTimeout(_displayBarTapTimer)
+      // 3秒以内に5回タップしなければリセット
+      _displayBarTapTimer = setTimeout(() => {
+        _displayBarTapCount = 0
+        _displayBarTapTimer = null
+      }, 3000)
+
+      if (_displayBarTapCount >= 5) {
+        _displayBarTapCount = 0
+        clearTimeout(_displayBarTapTimer)
+        _displayBarTapTimer = null
+        closeCartOverlay()
+        AppState.currentView = 'sales'
+        AppState.salesTab = 'local'
+        render()
+      }
+    }
+
+    // 合計金額バー以外の操作でタップカウントをリセット
+    function resetDisplayBarTapCount() {
+      if (_displayBarTapCount > 0) {
+        _displayBarTapCount = 0
+        if (_displayBarTapTimer) {
+          clearTimeout(_displayBarTapTimer)
+          _displayBarTapTimer = null
+        }
+      }
+    }
+
+    // ============================================================
     // Event Handlers
     // ============================================================
     function handleItemTap(itemId) {
@@ -2257,6 +2450,7 @@
 
     // サイズ直接タップ（グリッドUI用）
     function handleSizeDirectTap(itemId, size, sizeLabel, price) {
+      resetDisplayBarTapCount()
       const item = ITEM_MASTER.find(i => i.id === itemId)
       if (!item) return
       AppState.cart = addToCart(AppState.cart, itemId, item.name, size, sizeLabel, price)
@@ -2272,6 +2466,7 @@
     }
 
     function handleSizeSelect(itemId, size, sizeLabel, price) {
+      resetDisplayBarTapCount()
       const item = ITEM_MASTER.find(i => i.id === itemId)
       if (!item) return
       AppState.cart = addToCart(AppState.cart, itemId, item.name, size, sizeLabel, price)
@@ -2286,18 +2481,8 @@
       render()
     }
 
-    function handleTitleTap() {
-      AppState.titleTapCount++
-      if (AppState.titleTapTimer) clearTimeout(AppState.titleTapTimer)
-      AppState.titleTapTimer = setTimeout(() => { AppState.titleTapCount = 0 }, 5000)
-      if (AppState.titleTapCount >= 5) {
-        AppState.titleTapCount = 0
-        AppState.currentView = 'sales'
-        render()
-      }
-    }
-
     function handleClearCart() {
+      resetDisplayBarTapCount()
       if (AppState.cart.length === 0) return
       AppState.cart = clearCart()
       persist()
@@ -2305,6 +2490,7 @@
     }
 
     function handleCheckout() {
+      resetDisplayBarTapCount()
       if (AppState.cart.length === 0) return
       AppState.checkoutModalOpen = true
       AppState.receivedAmount = 0
@@ -2330,7 +2516,36 @@
 
     function handleCloseSales() {
       AppState.currentView = 'order'
+      AppState.salesTab = 'local'
       render()
+    }
+
+    // ============================================================
+    // データ共有（クリップボードコピー＋インポート）
+    // ============================================================
+    async function handleExport() {
+      const json = exportData(AppState.sessionId, AppState.transactions)
+      try {
+        await navigator.clipboard.writeText(json)
+        showToast('コピーしました。LINEなどで集計担当者に送ってください。', 'success')
+      } catch {
+        // クリップボードAPIが使えない場合はテキストエリアにフォールバック
+        const area = document.getElementById('export-fallback-area')
+        const ta = document.getElementById('export-fallback')
+        if (area) area.style.display = 'block'
+        if (ta) { ta.value = json; ta.select() }
+        showToast('手動でコピーしてください', 'warning')
+        return
+      }
+      if (confirm('このデータをリセットしますか？')) {
+        const newState = resetAfterExport(AppState)
+        AppState.sessionId = newState.sessionId
+        AppState.transactions = newState.transactions
+        AppState.seqCounter = newState.seqCounter
+        persist()
+        render()
+        showToast('リセットしました', 'success')
+      }
     }
 
     function toggleImportArea() {
@@ -2339,42 +2554,18 @@
       area.style.display = area.style.display === 'none' ? 'block' : 'none'
     }
 
-    async function handleExport() {
-      const json = exportData(AppState.sessionId, AppState.transactions)
-      try {
-        await navigator.clipboard.writeText(json)
-        showToast('\u30b3\u30d4\u30fc\u3057\u307e\u3057\u305f\u3002LINE\u306a\u3069\u3067\u96c6\u8a08\u62c5\u5f53\u8005\u306b\u9001\u3063\u3066\u304f\u3060\u3055\u3044\u3002', 'success')
-      } catch {
-        const area = document.getElementById('export-fallback-area')
-        const ta = document.getElementById('export-fallback')
-        if (area) area.style.display = 'block'
-        if (ta) { ta.value = json; ta.select() }
-        showToast('\u624b\u52d5\u3067\u30b3\u30d4\u30fc\u3057\u3066\u304f\u3060\u3055\u3044', 'warning')
-        return
-      }
-      if (confirm('\u3053\u306e\u30c7\u30fc\u30bf\u3092\u30ea\u30bb\u30c3\u30c8\u3057\u307e\u3059\u304b\uff1f')) {
-        const newState = resetAfterExport(AppState)
-        AppState.sessionId = newState.sessionId
-        AppState.transactions = newState.transactions
-        AppState.seqCounter = newState.seqCounter
-        persist()
-        render()
-        showToast('\u30ea\u30bb\u30c3\u30c8\u3057\u307e\u3057\u305f', 'success')
-      }
-    }
-
     function handleImport() {
       const ta = document.getElementById('import-textarea')
       if (!ta) return
       const json = ta.value.trim()
-      if (!json) { showToast('\u30c7\u30fc\u30bf\u3092\u8cbc\u308a\u4ed8\u3051\u3066\u304f\u3060\u3055\u3044', 'warning'); return }
+      if (!json) { showToast('データを貼り付けてください', 'warning'); return }
       const result = importData(json, AppState.transactions)
       if (result.error) { showToast(result.error, 'error'); return }
       AppState.transactions = result.transactions
       ta.value = ''
       persist()
       render()
-      showToast(result.added + '\u4ef6\u53d6\u308a\u8fbc\u307f\u307e\u3057\u305f\u3002' + result.skipped + '\u4ef6\u306f\u30b9\u30ad\u30c3\u30d7\u3057\u307e\u3057\u305f\u3002', 'success')
+      showToast(result.added + '件取り込みました。' + result.skipped + '件はスキップしました。', 'success')
     }
 
     function handleReset() {
@@ -2424,19 +2615,42 @@
     }
     render()
 
-    // ヘッダー以外タップでタイトルタップカウントをリセット
-    document.addEventListener('click', function (e) {
-      const header = document.getElementById('order-header')
-      if (header && !header.contains(e.target)) {
-        if (AppState.titleTapCount > 0) {
-          AppState.titleTapCount = 0
-          if (AppState.titleTapTimer) {
-            clearTimeout(AppState.titleTapTimer)
-            AppState.titleTapTimer = null
-          }
+      // ── イベントリスナー（touch/clickの二重発火を防ぐため addEventListener で一元管理）
+      ; (function () {
+        const displayBar = document.getElementById('display-bar')
+        const cartBtn = document.getElementById('cart-inline-btn')
+
+        let _barTouchFired = false
+        let _cartTouchFired = false
+
+        // 合計金額バー：5回タップで売上確認画面へ
+        if (displayBar) {
+          displayBar.addEventListener('touchend', function (e) {
+            _barTouchFired = true
+            handleDisplayBarTap(e)
+            setTimeout(() => { _barTouchFired = false }, 500)
+          }, { passive: true })
+          displayBar.addEventListener('click', function (e) {
+            if (_barTouchFired) return // touchendで処理済み
+            handleDisplayBarTap(e)
+          })
         }
-      }
-    }, true)
+
+        // カートボタン：ドロップダウン開閉
+        if (cartBtn) {
+          cartBtn.addEventListener('touchend', function (e) {
+            e.stopPropagation()
+            _cartTouchFired = true
+            toggleCartOverlay()
+            setTimeout(() => { _cartTouchFired = false }, 500)
+          }, { passive: true })
+          cartBtn.addEventListener('click', function (e) {
+            e.stopPropagation()
+            if (_cartTouchFired) return // touchendで処理済み
+            toggleCartOverlay()
+          })
+        }
+      })()
 
     // Service Worker 登録（PWAオフライン対応）
     if ('serviceWorker' in navigator) {

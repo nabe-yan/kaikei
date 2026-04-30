@@ -1,6 +1,6 @@
 // 富士見横丁レトロ 会計アプリ Service Worker
-const CACHE_NAME = 'fujimi-yokocho-v1'
-const CACHE_FILES = ['./', './manifest.json']
+const CACHE_NAME = 'fujimi-yokocho-v3'
+const CACHE_FILES = ['./', './manifest.json', './assets/main_logo.png']
 
 // インストール：キャッシュにファイルを保存
 self.addEventListener('install', event => {
@@ -26,8 +26,13 @@ self.addEventListener('activate', event => {
   )
 })
 
-// フェッチ：Cache-First 戦略
+// フェッチ：Cache-First 戦略（外部URLはキャッシュしない）
 self.addEventListener('fetch', event => {
+  // 同一オリジン以外（SharedJSON等の外部URL）はService Workerを素通りさせる
+  // これにより全体売上ビューで常に最新データが取得される
+  if (!event.request.url.startsWith(self.location.origin)) {
+    return
+  }
   event.respondWith(
     caches.match(event.request)
       .then(cached => cached || fetch(event.request))
