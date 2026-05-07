@@ -1872,6 +1872,8 @@
       txHistoryOpen: false,
       salesTab: 'local',
       salesDate: null,  // null = 当日、'YYYYMMDD' = 特定日、'all' = 全期間
+      globalDate: 'all', // 全体タブの日付フィルタ（'all' = 全期間、'YYYYMMDD' = 特定日）
+      globalTransactions: null, // 全体タブのキャッシュ（再取得を避ける）
     }
 
     // ============================================================
@@ -2121,6 +2123,7 @@
 
     function switchSalesTab(tab) {
       AppState.salesTab = tab
+      if (tab === 'global') AppState.globalTransactions = null // 全体タブは毎回最新を取得
       renderSalesView()
     }
 
@@ -2284,7 +2287,6 @@
       const body = document.getElementById('sales-body')
       if (!body) return
 
-      // タブUIを保持しつつローディング表示
       const tabHtml = body.innerHTML
       body.innerHTML = tabHtml + '<div style="text-align:center;padding:20px;color:#888;font-size:14px;">読み込み中...</div>'
 
@@ -2295,77 +2297,123 @@
 
       try {
         const data = await fetchSharedData()
-        const transactions = (data && Array.isArray(data.transactions)) ? data.transactions : []
+        const allTransactions = (data && Array.isArray(data.transactions)) ? data.transactions : []
+        AppState.globalTransactions = allTransactions
         const fetchedAt = new Date().toLocaleString('ja-JP')
 
-        // 全日付対象で集計
-        const total = transactions.reduce((sum, t) => sum + t.total, 0)
-        const statsMap = {}
-        for (const tx of transactions) {
-          for (const item of tx.items) {
-            const key = item.itemId + '_' + item.size
-            if (!statsMap[key]) {
-              statsMap[key] = { itemId: item.itemId, name: item.name, size: item.size, sizeLabel: item.sizeLabel, quantity: 0, amount: 0 }
-            }
-            statsMap[key].quantity += item.quantity
-            statsMap[key].amount += item.subtotal
-          }
-        }
-        const itemStats = Object.values(statsMap).sort((a, b) => b.amount - a.amount)
-
-        let html = tabHtml
-
-        // Total card
-        html += '<div class="sales-total-card">' +
-          '<div class="sales-total-label">全体売上合計</div>' +
-          '<div class="sales-total-amount">' + formatPrice(total) + '</div>' +
-          '<div class="sales-total-count">' + transactions.length + '件の取引</div>' +
-          '<div style="font-size:11px;color:#aaa;margin-top:4px;">取得日時: ' + fetchedAt + '</div>' +
-          '</div>'
-
-        // Item stats
-        html += '<div class="sales-section-title">品目別集計（全端末・全期間）</div>'
-        if (itemStats.length === 0) {
-          html += '<div class="sales-card"><div class="sales-empty">取引なし</div></div>'
-        } else {
-          html += '<div class="sales-card">'
-          html += itemStats.map(s =>
-            '<div class="item-stat-row">' +
-            '<span class="item-stat-name">' + s.name + '</span>' +
-            '<span class="item-stat-size">' + s.sizeLabel + '</span>' +
-            '<span class="item-stat-qty">' + s.quantity + '個</span>' +
-            '<span class="item-stat-amount">' + formatPrice(s.amount) + '</span>' +
-            '</div>'
-          ).join('')
-          html += '</div>'
-        }
-
-        // Transaction history（新しい順）
-        html += '<div class="sales-section-title">取引履歴（全端末）</div>'
-        if (transactions.length === 0) {
-          html += '<div class="sales-card"><div class="sales-empty">取引なし</div></div>'
-        } else {
-          html += '<div class="sales-card">'
-          const sorted = [...transactions].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
-          html += sorted.map(tx => {
-            const d = new Date(tx.timestamp)
-            const timeStr = d.toLocaleString('ja-JP', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
-            const itemsStr = tx.items.map(i => i.name + (i.sizeLabel !== 'ノーマル' ? '(' + i.sizeLabel + ')' : '') + '×' + i.quantity).join('、')
-            return '<div class="tx-row">' +
-              '<div class="tx-row-header">' +
-              '<span class="tx-time">' + timeStr + ' [' + tx.sessionId + ']</span>' +
-              '<span class="tx-total">' + formatPrice(tx.total) + '</span>' +
-              '</div>' +
-              '<div class="tx-items">' + itemsStr + '</div>' +
-              '</div>'
-          }).join('')
-          html += '</div>'
-        }
-
-        body.innerHTML = html
+        renderGlobalContent(tabHtml, allTransactions, fetchedAt)
       } catch (e) {
-        const tabHtmlCurrent = body.innerHTML.split('<div style')[0]
-        body.innerHTML = tabHtmlCurrent + '<div style="text-align:center;padding:20px;color:var(--red);font-size:14px;">取得に失敗しました: ' + e.message + '</div>'
+        body.innerHTML = tabHtml + '<div style="text-align:center;padding:20px;color:var(--red);font-size:14px;">取得に失敗しました: ' + e.message + '</div>'
+      }
+    }
+
+    function renderGlobalContent(tabHtml, allTransactions, fetchedAt) {
+      const body = document.getElementById('sales-body')
+      if (!body) return
+
+      // データがある日付一覧（新しい順）
+      const allDates = [...new Set(allTransactions.map(t => t.dateKey))].sort((a, b) => b.localeCompare(a))
+
+      // 選択中の日付を決定
+      if (AppState.globalDate !== 'all' && !allDates.includes(AppState.globalDate)) {
+        AppState.globalDate = 'all'
+      }
+
+      // フィルタ適用
+      const transactions = AppState.globalDate === 'all'
+        ? allTransactions
+        : allTransactions.filter(t => t.dateKey === AppState.globalDate)
+
+      // 集計
+      const total = transactions.reduce((sum, t) => sum + t.total, 0)
+      const statsMap = {}
+      for (const tx of transactions) {
+        for (const item of tx.items) {
+          const key = item.itemId + '_' + item.size
+          if (!statsMap[key]) {
+            statsMap[key] = { itemId: item.itemId, name: item.name, size: item.size, sizeLabel: item.sizeLabel, quantity: 0, amount: 0 }
+          }
+          statsMap[key].quantity += item.quantity
+          statsMap[key].amount += item.subtotal
+        }
+      }
+      const itemStats = Object.values(statsMap).sort((a, b) => b.amount - a.amount)
+
+      let html = tabHtml
+
+      // 日付セレクター
+      html += '<div class="date-selector">'
+      html += '<button class="date-btn' + (AppState.globalDate === 'all' ? ' active' : '') + '" onclick="switchGlobalDate(&apos;all&apos;)">全期間</button>'
+      allDates.forEach(d => {
+        const label = d.slice(0, 4) + '/' + d.slice(4, 6) + '/' + d.slice(6, 8)
+        html += '<button class="date-btn' + (AppState.globalDate === d ? ' active' : '') + '" onclick="switchGlobalDate(&apos;' + d + '&apos;)">' + label + '</button>'
+      })
+      html += '</div>'
+
+      // Total card
+      const dateLabel = AppState.globalDate === 'all' ? '全体売上合計（全期間）' : AppState.globalDate.slice(0, 4) + '/' + AppState.globalDate.slice(4, 6) + '/' + AppState.globalDate.slice(6, 8) + ' 全体売上合計'
+      html += '<div class="sales-total-card">' +
+        '<div class="sales-total-label">' + dateLabel + '</div>' +
+        '<div class="sales-total-amount">' + formatPrice(total) + '</div>' +
+        '<div class="sales-total-count">' + transactions.length + '件の取引</div>' +
+        '<div style="font-size:11px;color:#aaa;margin-top:4px;">取得日時: ' + fetchedAt + '</div>' +
+        '</div>'
+
+      // Item stats
+      html += '<div class="sales-section-title">品目別集計（全端末）</div>'
+      if (itemStats.length === 0) {
+        html += '<div class="sales-card"><div class="sales-empty">取引なし</div></div>'
+      } else {
+        html += '<div class="sales-card">'
+        html += itemStats.map(s =>
+          '<div class="item-stat-row">' +
+          '<span class="item-stat-name">' + s.name + '</span>' +
+          '<span class="item-stat-size">' + s.sizeLabel + '</span>' +
+          '<span class="item-stat-qty">' + s.quantity + '個</span>' +
+          '<span class="item-stat-amount">' + formatPrice(s.amount) + '</span>' +
+          '</div>'
+        ).join('')
+        html += '</div>'
+      }
+
+      // Transaction history
+      html += '<div class="sales-section-title">取引履歴（全端末）</div>'
+      if (transactions.length === 0) {
+        html += '<div class="sales-card"><div class="sales-empty">取引なし</div></div>'
+      } else {
+        html += '<div class="sales-card">'
+        const sorted = [...transactions].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+        html += sorted.map(tx => {
+          const d = new Date(tx.timestamp)
+          const timeStr = AppState.globalDate === 'all'
+            ? d.toLocaleString('ja-JP', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
+            : d.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+          const itemsStr = tx.items.map(i => i.name + (i.sizeLabel !== 'ノーマル' ? '(' + i.sizeLabel + ')' : '') + '×' + i.quantity).join('、')
+          return '<div class="tx-row">' +
+            '<div class="tx-row-header">' +
+            '<span class="tx-time">' + timeStr + ' [' + tx.sessionId + ']</span>' +
+            '<span class="tx-total">' + formatPrice(tx.total) + '</span>' +
+            '</div>' +
+            '<div class="tx-items">' + itemsStr + '</div>' +
+            '</div>'
+        }).join('')
+        html += '</div>'
+      }
+
+      body.innerHTML = html
+    }
+
+    function switchGlobalDate(date) {
+      AppState.globalDate = date
+      // 再取得せずキャッシュを使って再描画
+      const tabHtml = document.querySelector('.sales-tabs') ? document.querySelector('.sales-tabs').outerHTML : ''
+      const fetchedAt = new Date().toLocaleString('ja-JP')
+      if (AppState.globalTransactions) {
+        const body = document.getElementById('sales-body')
+        if (body) body.innerHTML = tabHtml
+        renderGlobalContent(tabHtml, AppState.globalTransactions, fetchedAt)
+      } else {
+        renderGlobalSalesView()
       }
     }
 
