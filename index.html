@@ -839,6 +839,40 @@
       background: rgba(255, 255, 255, 0.1);
     }
 
+    /* 日付セレクター */
+    .date-selector {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 10px 12px;
+      background: var(--bg);
+      border-bottom: 1px solid var(--line);
+      flex-shrink: 0;
+    }
+
+    .date-btn {
+      background: var(--paper);
+      border: 1.5px solid var(--line);
+      border-radius: 6px;
+      padding: 5px 10px;
+      font-size: 12px;
+      font-weight: 700;
+      font-family: inherit;
+      color: var(--ink);
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+
+    .date-btn.active {
+      background: var(--bg-dark);
+      color: var(--paper);
+      border-color: var(--bg-dark);
+    }
+
+    .date-btn:active {
+      background: var(--line);
+    }
+
     .sales-header {
       background: var(--bg-dark);
       color: #fff;
@@ -1326,8 +1360,12 @@
     // ============================================================
     // ⚠️ CORSヘッダー（Access-Control-Allow-Origin: *）を返すサービスのURLを設定すること
     // ⚠️ パブリックリポジトリに公開する場合はURLが外部から見える点に注意
-    // 例: 'https://api.jsonbin.io/v3/b/XXXXX'（JSONBin.io等のCORS対応サービス）
-    const SHARED_JSON_URL = ''
+    const SHARED_JSON_URL = 'https://api.jsonbin.io/v3/b/69fc7ec6c0954111d8ed206c'
+    const SHARED_JSON_HEADERS = {
+      'Content-Type': 'application/json',
+      'X-Master-Key': '$2a$10$sy6XO52b1emydT3HqNuHFeBwLfsvrTz9KI6FGgj27sgUJXhdb8R.S',
+      'X-Access-Key': '$2a$10$.HqDt3jqD0LWcenJ8756I.zXOxLg3HSXTv4XjvXgrprDMVD2G4dam',
+    }
 
     // ============================================================
     // ロジック層（src/logic.js より移植、export キーワード削除）
@@ -1833,6 +1871,7 @@
       deleteMode: false,
       txHistoryOpen: false,
       salesTab: 'local',
+      salesDate: null,  // null = 当日、'YYYYMMDD' = 特定日、'all' = 全期間
     }
 
     // ============================================================
@@ -2089,16 +2128,60 @@
       const body = document.getElementById('sales-body')
       if (!body) return
 
-      const { total, itemStats } = getDailySummary(AppState.transactions)
-      const todayTx = getTodayTransactions(AppState.transactions)
+      // データがある日付一覧を取得（新しい順）
+      const allDates = [...new Set(AppState.transactions.map(t => t.dateKey))]
+        .sort((a, b) => b.localeCompare(a))
+      const today = todayKey()
+
+      // 選択中の日付を決定
+      if (AppState.salesDate === null) AppState.salesDate = today
+      // データがない日付が選択されていたら当日にリセット
+      if (AppState.salesDate !== 'all' && !allDates.includes(AppState.salesDate)) {
+        AppState.salesDate = allDates.length > 0 ? allDates[0] : today
+      }
+
+      // 表示対象のトランザクション
+      const targetTx = AppState.salesDate === 'all'
+        ? AppState.transactions
+        : AppState.transactions.filter(t => t.dateKey === AppState.salesDate)
+
+      // 集計
+      const total = targetTx.reduce((sum, t) => sum + t.total, 0)
+      const statsMap = {}
+      for (const tx of targetTx) {
+        for (const item of tx.items) {
+          const key = item.itemId + '_' + item.size
+          if (!statsMap[key]) {
+            statsMap[key] = { itemId: item.itemId, name: item.name, size: item.size, sizeLabel: item.sizeLabel, quantity: 0, amount: 0 }
+          }
+          statsMap[key].quantity += item.quantity
+          statsMap[key].amount += item.subtotal
+        }
+      }
+      const itemStats = Object.values(statsMap).sort((a, b) => b.amount - a.amount)
 
       let html = body.innerHTML // タブUIを保持
 
+      // 日付セレクター
+      html += '<div class="date-selector">'
+      // 全期間ボタン
+      html += '<button class="date-btn' + (AppState.salesDate === 'all' ? ' active' : '') + '" onclick="switchSalesDate(&apos;all&apos;)">全期間</button>'
+      // 日付ボタン（データがある日付のみ）
+      allDates.forEach(d => {
+        const label = d.slice(0, 4) + '/' + d.slice(4, 6) + '/' + d.slice(6, 8)
+        html += '<button class="date-btn' + (AppState.salesDate === d ? ' active' : '') + '" onclick="switchSalesDate(&apos;' + d + '&apos;)">' + label + '</button>'
+      })
+      if (allDates.length === 0) {
+        html += '<span style="font-size:12px;color:#aaa;padding:4px 8px;">データなし</span>'
+      }
+      html += '</div>'
+
       // Total card
+      const dateLabel = AppState.salesDate === 'all' ? '全期間売上合計' : AppState.salesDate === today ? '本日売上合計' : AppState.salesDate.slice(0, 4) + '/' + AppState.salesDate.slice(4, 6) + '/' + AppState.salesDate.slice(6, 8) + ' 売上合計'
       html += '<div class="sales-total-card">' +
-        '<div class="sales-total-label">本日売上合計</div>' +
+        '<div class="sales-total-label">' + dateLabel + '</div>' +
         '<div class="sales-total-amount">' + formatPrice(total) + '</div>' +
-        '<div class="sales-total-count">' + todayTx.length + '件の取引</div>' +
+        '<div class="sales-total-count">' + targetTx.length + '件の取引</div>' +
         '</div>'
 
       // Item stats
@@ -2127,14 +2210,16 @@
         '</div>'
 
       if (AppState.txHistoryOpen) {
-        if (todayTx.length === 0) {
+        if (targetTx.length === 0) {
           html += '<div class="sales-card"><div class="sales-empty">取引なし</div></div>'
         } else {
           html += '<div class="sales-card">'
-          const sorted = [...todayTx].reverse()
+          const sorted = [...targetTx].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
           html += sorted.map(tx => {
             const d = new Date(tx.timestamp)
-            const timeStr = d.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+            const timeStr = AppState.salesDate === 'all'
+              ? d.toLocaleString('ja-JP', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
+              : d.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
             const itemsStr = tx.items.map(i => i.name + (i.sizeLabel !== 'ノーマル' ? '(' + i.sizeLabel + ')' : '') + '×' + i.quantity).join('、')
             const deleteBtn = AppState.deleteMode
               ? '<button onclick="handleDeleteTransaction(&apos;' + tx.id + '&apos;)" style="flex-shrink:0;background:var(--red);color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;touch-action:manipulation;">削除</button>'
@@ -2161,27 +2246,38 @@
         '<div class="export-fallback-area" id="export-fallback-area" style="display:none">' +
         '<textarea class="export-fallback-textarea" id="export-fallback" readonly></textarea>' +
         '<div class="export-fallback-note">上記をコピーしてLINEなどで送ってください</div>' +
-        '</div>' +
-        '<button class="btn-import-toggle" onclick="toggleImportArea()">データをインポート</button>' +
+        '</div>'
+
+      // SharedJSONアップロードボタン（URLが設定されている場合のみ表示）
+      if (SHARED_JSON_URL) {
+        html += '<button class="btn-export" id="btn-upload" onclick="uploadSharedData()" style="background:var(--green);margin-top:8px;">SharedJSONにアップロード</button>'
+      }
+
+      html += '<button class="btn-import-toggle" onclick="toggleImportArea()">データをインポート</button>' +
         '<div class="import-area" id="import-area" style="display:none">' +
         '<textarea class="import-textarea" id="import-textarea" placeholder="コピーしたJSONを貼り付けてください"></textarea>' +
         '<button class="btn-import-exec" onclick="handleImport()">取り込む</button>' +
         '</div>' +
         '</div>'
 
-      // Reset section
-      html += '<div class="reset-section">' +
-        '<button class="btn-reset" onclick="handleReset()">本日のデータをリセット</button>' +
-        '</div>'
+      // Reset section は削除（データを消す機能は不要）
 
       body.innerHTML = html
     }
 
+    function switchSalesDate(date) {
+      AppState.salesDate = date
+      AppState.txHistoryOpen = false
+      renderSalesView()
+    }
+
     async function fetchSharedData() {
       if (!SHARED_JSON_URL) return null
-      const res = await fetch(SHARED_JSON_URL)
+      const res = await fetch(SHARED_JSON_URL, { headers: SHARED_JSON_HEADERS })
       if (!res.ok) throw new Error('HTTP ' + res.status)
-      return await res.json()
+      const data = await res.json()
+      // JSONBin.ioはレスポンスが { record: {...} } 形式
+      return data.record || data
     }
 
     async function renderGlobalSalesView() {
@@ -2588,6 +2684,62 @@
       const area = document.getElementById('import-area')
       if (!area) return
       area.style.display = area.style.display === 'none' ? 'block' : 'none'
+    }
+
+    // ============================================================
+    // SharedJSON アップロード（read-modify-write）
+    // ============================================================
+    async function uploadSharedData() {
+      if (!SHARED_JSON_URL) {
+        showToast('共有URLが設定されていません', 'error')
+        return
+      }
+
+      const btn = document.getElementById('btn-upload')
+      if (btn) { btn.disabled = true; btn.textContent = '送信中...' }
+
+      try {
+        // Step 1: 既存データをGETで取得（失敗時は初回アップロードとして扱う）
+        let existingTransactions = []
+        try {
+          const getRes = await fetch(SHARED_JSON_URL, { headers: SHARED_JSON_HEADERS })
+          if (getRes.ok) {
+            const existing = await getRes.json()
+            // JSONBin.ioはレスポンスが { record: {...} } 形式
+            const record = existing.record || existing
+            if (record && Array.isArray(record.transactions)) {
+              existingTransactions = record.transactions
+            }
+          }
+        } catch { /* 初回アップロードとして続行 */ }
+
+        // Step 2: 既存データと自端末データをマージ
+        const { transactions: merged } = importData(
+          JSON.stringify({ version: '1.0', transactions: AppState.transactions }),
+          existingTransactions
+        )
+
+        // Step 3: マージ済みデータをPUTでアップロード
+        const payload = JSON.stringify({
+          version: '1.0',
+          exportedAt: new Date().toISOString(),
+          transactions: merged,
+        })
+        const putRes = await fetch(SHARED_JSON_URL, {
+          method: 'PUT',
+          headers: SHARED_JSON_HEADERS,
+          body: payload,
+        })
+        if (!putRes.ok) throw new Error('HTTP ' + putRes.status)
+
+        const added = merged.length - existingTransactions.length
+        const skipped = AppState.transactions.length - Math.max(0, added)
+        showToast('アップロード完了（' + added + '件追加、' + skipped + '件は重複スキップ）', 'success')
+      } catch (e) {
+        showToast('アップロードに失敗しました: ' + e.message, 'error')
+      } finally {
+        if (btn) { btn.disabled = false; btn.textContent = 'SharedJSONにアップロード' }
+      }
     }
 
     function handleImport() {

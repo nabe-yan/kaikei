@@ -1,4 +1,4 @@
-name: Update SW Cache Version on Push
+日毎name: Update SW Cache Version on Push
 
 on:
   push:
