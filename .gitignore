@@ -3,8 +3,12 @@ node_modules/
 package.json
 package-lock.json
 vitest.config.js
+playwright.config.js
 src/
 kaikei/
+test-results/
+playwright-report/
+blob-report/
 
 # Kiro IDE設定
 .kiro/
